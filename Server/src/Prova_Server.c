@@ -14,6 +14,11 @@ void ClearWinSock(){
     WSACleanup();
 
 }
+
+void invio(int clientSocket,char inputString[BUFFERSIZE],int stringLen);
+void ricevi(int totalBytesRcvd,int bytesRcvd,int clientSocket,char buf[BUFFERSIZE]);
+
+
 int main() {
 	int port;
 	port = PROTOPORT; // use default port number
@@ -54,7 +59,7 @@ int main() {
 	char buf[BUFFERSIZE];
 	char buf1[BUFFERSIZE];
 
-	printf("Waiting for a client to connect...");
+	printf("Waiting for a client to connect...\n");
 	fflush(stdout);
 	while (1){
 		fflush(stdout);
@@ -67,26 +72,48 @@ int main() {
 			return 0;
 		}
 		printf("Handling client %s\n", inet_ntoa(cad.sin_addr));
-		char* inputString = "Connessione avvenuta";
+		char inputString[BUFFERSIZE] = "Connessione avvenuta";
 		int stringLen = strlen(inputString);
 
 		//INVIO DATI
-		if (send(clientSocket, inputString, stringLen, 0) != stringLen) {
-			ErrorHandler("send() sent a different number of bytes than expected");
-			closesocket(clientSocket);
-			ClearWinSock();
-			return -1;
-		}
+		invio(clientSocket,inputString,stringLen);
 
 		//RICEVI
-		printf("Received: ");
+		ricevi(totalBytesRcvd,bytesRcvd,clientSocket,buf);
+
+		totalBytesRcvd=0;
+
+		//RICEVI2
+		ricevi(totalBytesRcvd, bytesRcvd, clientSocket, buf1);
+
+		totalBytesRcvd=0;
+
+		  strupr(buf);
+		  //INVIO 1
+		  invio(clientSocket,buf,stringLen);
+
+		  strlwr(buf1);
+		  //INVIO 2
+		  invio(clientSocket,buf1,stringLen);
+	   }
+}
+
+void invio(int clientSocket,char inputString[BUFFERSIZE],int stringLen){
+	if (send(clientSocket, inputString, stringLen, 0) != stringLen) {
+				ErrorHandler("send() sent a different number of bytes than expected");
+				closesocket(clientSocket);
+				ClearWinSock();
+	}
+}
+
+void ricevi(int totalBytesRcvd,int bytesRcvd,int clientSocket,char buf[BUFFERSIZE]){
+	printf("Received: ");
 		while (totalBytesRcvd == 0){
 			fflush(stdout);
 			if ((bytesRcvd = recv(clientSocket, buf, BUFFERSIZE - 1, 0)) <= 0) {
 				ErrorHandler("recv() failed or connection closed prematurely");
 				closesocket(clientSocket);
 				ClearWinSock();
-				return -1;
 			}
 			totalBytesRcvd += bytesRcvd;
 			buf[bytesRcvd] = '\0';
@@ -94,45 +121,4 @@ int main() {
 			fflush(stdout);
 			printf("\n");
 		}
-
-		totalBytesRcvd=0;
-
-		//RICEVI2
-		printf("Received: ");
-		  while (totalBytesRcvd == 0){
-			  fflush(stdout);
-			if ((bytesRcvd = recv(clientSocket, buf1, BUFFERSIZE - 1, 0)) <= 0) {
-				ErrorHandler("recv() failed or connection closed prematurely");
-				closesocket(clientSocket);
-				ClearWinSock();
-				return -1;
-			}
-			totalBytesRcvd += bytesRcvd;
-			buf1[bytesRcvd] = '\0';
-			printf("%s", buf1);
-			  fflush(stdout);
-			  printf("\n");
-		  }
-
-		  totalBytesRcvd=0;
-
-		  strupr(buf);
-		  //INVIO 1
-		  if (send(clientSocket, buf, stringLen, 0) != stringLen) {
-				ErrorHandler("send() sent a different number of bytes than expected");
-				closesocket(clientSocket);
-				ClearWinSock();
-				return -1;
-		  }
-
-		  strlwr(buf1);
-
-		  //INVIO 2
-		  if (send(clientSocket, buf1, stringLen, 0) != stringLen) {
-					ErrorHandler("send() sent a different number of bytes than expected");
-					closesocket(clientSocket);
-					ClearWinSock();
-					return -1;
-		  }
-	   }
 }

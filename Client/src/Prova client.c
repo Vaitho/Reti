@@ -11,6 +11,9 @@ void ClearWinSock(){
     WSACleanup();
 }
 
+void invio(int clientSocket,char inputString[BUFFERSIZE],int stringLen);
+void ricevi(int totalBytesRcvd,int bytesRcvd,int clientSocket,char buf[BUFFERSIZE]);
+
 int main(void) {
 	WSADATA wsaData;
 	int iResult = WSAStartup(MAKEWORD(2 ,2), &wsaData);
@@ -35,22 +38,9 @@ int main(void) {
 	int totalBytesRcvd = 0;
 	char buf[BUFFERSIZE]; // buffer for data from the server
 
-	printf("Received: "); // Setup to print the echoed string
-	while (totalBytesRcvd == 0) {
-		fflush(stdout);
-		if ((bytesRcvd = recv(Csocket, buf, BUFFERSIZE - 1, 0)) <= 0) {
-			ErrorHandler("recv() failed or connection closed prematurely");
-			closesocket(Csocket);
-			ClearWinSock();
-			return -1;
-		}
-		totalBytesRcvd += bytesRcvd; // Keep tally of total bytes
-		buf[bytesRcvd] = '\0'; // Add \0 so printf knows where to stop
-		printf("%s", buf); // Print the echo buffer
-		fflush(stdout);
-		printf("\n");
-		fflush(stdout);
-	}
+	ricevi(totalBytesRcvd,bytesRcvd,Csocket,buf);
+
+	memset(buf, 0, BUFFERSIZE*sizeof(buf[0]));
 
 	char stringa1[BUFFERSIZE];
 	char stringa2[BUFFERSIZE];
@@ -72,64 +62,52 @@ int main(void) {
 	fflush(stdout);
 
 	//PRIMA STRINGA INVIATA
-	if (send(Csocket, stringa1, stringLen, 0) != stringLen) {
-			ErrorHandler("send() sent a different number of bytes than expected");
-			closesocket(Csocket);
-			ClearWinSock();
-			return -1;
-	}
+	invio(Csocket,stringa1,stringLen);
 
 	//SECONDA STRINGA INVIATA
-	if (send(Csocket, stringa2, stringLen2, 0) != stringLen2) {
-			ErrorHandler("send() sent a different number of bytes than expected");
-			closesocket(Csocket);
-			ClearWinSock();
-			return -1;
-	}
-
+	invio(Csocket,stringa2,stringLen2);
 	//RICEVI LE STRINGHE MODIFICATE
 
 	totalBytesRcvd=0;
 	memset(buf, 0, BUFFERSIZE*sizeof(buf[0]));
 
-	while (totalBytesRcvd == 0) {
-		fflush(stdout);
-		if ((bytesRcvd = recv(Csocket, buf, BUFFERSIZE - 1, 0)) <= 0) {
-			ErrorHandler("recv() failed or connection closed prematurely");
-			closesocket(Csocket);
-			ClearWinSock();
-			return -1;
-		}
-		totalBytesRcvd += bytesRcvd; // Keep tally of total bytes
-		buf[bytesRcvd] = '\0'; // Add \0 so printf knows where to stop
-		printf("%s", buf); // Print the echo buffer
-		fflush(stdout);
-		printf("\n");
-		fflush(stdout);
-	}
+	ricevi(totalBytesRcvd,bytesRcvd,Csocket,buf);
 
 	totalBytesRcvd=0;
 	memset(buf, 0, BUFFERSIZE*sizeof(buf[0]));
 
-	while (totalBytesRcvd == 0) {
-		fflush(stdout);
-		if ((bytesRcvd = recv(Csocket, buf, BUFFERSIZE - 1, 0)) <= 0) {
-			ErrorHandler("recv() failed or connection closed prematurely");
-			closesocket(Csocket);
-			ClearWinSock();
-			return -1;
-		}
-		totalBytesRcvd += bytesRcvd; // Keep tally of total bytes
-		buf[bytesRcvd] = '\0'; // Add \0 so printf knows where to stop
-		printf("%s", buf); // Print the echo buffer
-		fflush(stdout);
-		printf("\n");
-		fflush(stdout);
-	}
+	ricevi(totalBytesRcvd,bytesRcvd,Csocket,buf);
 
 	// CHIUSURA DELLA CONNESSIONE
 	closesocket(Csocket);
 	ClearWinSock();
 	system("PAUSE");
 	return(0);
+}
+
+
+
+void invio(int clientSocket,char inputString[BUFFERSIZE],int stringLen){
+	if (send(clientSocket, inputString, stringLen, 0) != stringLen) {
+				ErrorHandler("send() sent a different number of bytes than expected");
+				closesocket(clientSocket);
+				ClearWinSock();
+	}
+}
+
+void ricevi(int totalBytesRcvd,int bytesRcvd,int clientSocket,char buf[BUFFERSIZE]){
+	printf("Received: ");
+		while (totalBytesRcvd == 0){
+			fflush(stdout);
+			if ((bytesRcvd = recv(clientSocket, buf, BUFFERSIZE - 1, 0)) <= 0) {
+				ErrorHandler("recv() failed or connection closed prematurely");
+				closesocket(clientSocket);
+				ClearWinSock();
+			}
+			totalBytesRcvd += bytesRcvd;
+			buf[bytesRcvd] = '\0';
+			printf("%s", buf);
+			fflush(stdout);
+			printf("\n");
+		}
 }
