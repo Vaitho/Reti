@@ -1,4 +1,12 @@
+#if defined WIN32
 #include <winsock.h>
+#else
+#define closesocket close
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #define BUFFERSIZE 512
@@ -11,8 +19,8 @@ void ClearWinSock(){
     WSACleanup();
 }
 
-void invio(int clientSocket,char inputString[BUFFERSIZE],int stringLen);
-void ricevi(int totalBytesRcvd,int bytesRcvd,int clientSocket,char buf[BUFFERSIZE]);
+void invio(int clientSocket, char inputString[BUFFERSIZE],int stringLen);
+void ricevi(int clientSocket, char buf[BUFFERSIZE]);
 
 int main(void) {
 	WSADATA wsaData;
@@ -23,6 +31,12 @@ int main(void) {
 	}
 	// CREAZIONE DELLA SOCKET
 	int Csocket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (Csocket < 0) {
+		ErrorHandler("socket creation failed.\n");
+		closesocket(Csocket);
+		ClearWinSock();
+		return -1;
+	}
 
 	// COSTRUZIONE DELL INDIRIZZO DEL SERVER
 	struct sockaddr_in sad;
@@ -30,15 +44,18 @@ int main(void) {
 	sad.sin_family = AF_INET;
 	sad.sin_addr.s_addr = inet_addr("127.0.0.1"); // IP del server
 	sad.sin_port = htons(PROTOPORT); // Server port
-	// CONNESSIONE AL SERVER
-	connect(Csocket, (struct sockaddr *)&sad, sizeof(sad));
 
+	// CONNESSIONE AL SERVER
+	if(connect(Csocket, (struct sockaddr *)&sad, sizeof(sad))){
+		ErrorHandler( "Failed to connect.\n" );
+		closesocket(Csocket);
+		ClearWinSock();
+		return -1;
+	}
 	//RICEVI
-	int bytesRcvd;
-	int totalBytesRcvd = 0;
 	char buf[BUFFERSIZE]; // buffer for data from the server
 
-	ricevi(totalBytesRcvd,bytesRcvd,Csocket,buf);
+	ricevi(Csocket,buf);
 
 	memset(buf, 0, BUFFERSIZE*sizeof(buf[0]));
 
@@ -67,16 +84,10 @@ int main(void) {
 	//SECONDA STRINGA INVIATA
 	invio(Csocket,stringa2,stringLen2);
 	//RICEVI LE STRINGHE MODIFICATE
-
-	totalBytesRcvd=0;
 	memset(buf, 0, BUFFERSIZE*sizeof(buf[0]));
-
-	ricevi(totalBytesRcvd,bytesRcvd,Csocket,buf);
-
-	totalBytesRcvd=0;
+	ricevi(Csocket, buf);
 	memset(buf, 0, BUFFERSIZE*sizeof(buf[0]));
-
-	ricevi(totalBytesRcvd,bytesRcvd,Csocket,buf);
+	ricevi(Csocket, buf);
 
 	// CHIUSURA DELLA CONNESSIONE
 	closesocket(Csocket);
@@ -87,20 +98,23 @@ int main(void) {
 
 
 
-void invio(int clientSocket,char inputString[BUFFERSIZE],int stringLen){
+void invio(int clientSocket, char inputString[BUFFERSIZE], int stringLen){
 	if (send(clientSocket, inputString, stringLen, 0) != stringLen) {
-				ErrorHandler("send() sent a different number of bytes than expected");
+				ErrorHandler("send() sent a different number of bytes than expected \n");
 				closesocket(clientSocket);
 				ClearWinSock();
 	}
 }
 
-void ricevi(int totalBytesRcvd,int bytesRcvd,int clientSocket,char buf[BUFFERSIZE]){
+void ricevi(int clientSocket, char buf[BUFFERSIZE]){
+	int bytesRcvd;
+	int totalBytesRcvd = 0;
+
 	printf("Received: ");
 		while (totalBytesRcvd == 0){
 			fflush(stdout);
 			if ((bytesRcvd = recv(clientSocket, buf, BUFFERSIZE - 1, 0)) <= 0) {
-				ErrorHandler("recv() failed or connection closed prematurely");
+				ErrorHandler("recv() failed or connection closed prematurely \n");
 				closesocket(clientSocket);
 				ClearWinSock();
 			}

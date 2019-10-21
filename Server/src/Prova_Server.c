@@ -1,28 +1,37 @@
+#if defined WIN32
 #include <winsock.h>
+#else
+#define closesocket close
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include<string.h>
 
 #define BUFFERSIZE 512
-#define PROTOPORT 27015 // default protocol port number
-#define QLEN 6 // size of request queue
+#define PROTOPORT 27015
+#define QLEN 6
 
 void ErrorHandler(char *errorMessage){
     printf ("%s", errorMessage);
 }
 void ClearWinSock(){
-    WSACleanup();
-
+	#if defined WIN32
+	WSACleanup();
+	#endif
 }
 
-void invio(int clientSocket,char inputString[BUFFERSIZE],int stringLen);
-void ricevi(int totalBytesRcvd,int bytesRcvd,int clientSocket,char buf[BUFFERSIZE]);
-
+void invio(int clientSocket, char inputString[BUFFERSIZE], int stringLen);
+void ricevi(int clientSocket, char buf[BUFFERSIZE]);
 
 int main() {
 	int port;
-	port = PROTOPORT; // use default port number
+	port = PROTOPORT;
 
+	#if defined WIN32
 	WSADATA wsaData;
 	int iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
 
@@ -30,10 +39,17 @@ int main() {
 		ErrorHandler("Error at WSAStartup()\n");
 		return 0;
 	}
+	#endif
 
 	// CREAZIONE DELLA SOCKET
 	int MySocket;
 	MySocket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (MySocket < 0) {
+		ErrorHandler("socket creation failed.\n");
+		ClearWinSock();
+		return -1;
+	}
+
 	// ASSEGNAZIONE DI UN INDIRIZZO ALLA SOCKET
 	struct sockaddr_in sad;
 	memset(&sad, 0, sizeof(sad)); // ensures that extra bytes contain 0
@@ -41,24 +57,29 @@ int main() {
 	sad.sin_addr.s_addr = inet_addr("127.0.0.1");
 	sad.sin_port = htons(port);
 
-
-	bind(MySocket, (struct sockaddr*) &sad, sizeof(sad));
+	if(bind(MySocket, (struct sockaddr*) &sad, sizeof(sad))<0){
+		ErrorHandler("bind() failed.\n");
+		closesocket(MySocket);
+		ClearWinSock();
+		return -1;
+	}
 
 	// SETTAGGIO DELLA SOCKET ALL'ASCOLTO
-	listen (MySocket, QLEN);
+	if(listen (MySocket, QLEN)){
+		ErrorHandler("listen() failed.\n");
+		closesocket(MySocket);
+		ClearWinSock();
+		return -1;
+	}
 
 	// ACCETTARE UNA NUOVA CONNESSIONE
 	struct sockaddr_in cad; // structure for the client address
 	int clientSocket; // socket descriptor for the client
 	int clientLen; // the size of the client address
 
-	//VARIABILI RICEVI
-	int bytesRcvd;
-	int totalBytesRcvd = 0;
-
 	char buf[BUFFERSIZE];
 	char buf1[BUFFERSIZE];
-
+	printf("[SERVER]: \n");
 	printf("Waiting for a client to connect...\n");
 	fflush(stdout);
 	while (1){
@@ -79,14 +100,10 @@ int main() {
 		invio(clientSocket,inputString,stringLen);
 
 		//RICEVI
-		ricevi(totalBytesRcvd,bytesRcvd,clientSocket,buf);
-
-		totalBytesRcvd=0;
+		ricevi(clientSocket,buf);
 
 		//RICEVI2
-		ricevi(totalBytesRcvd, bytesRcvd, clientSocket, buf1);
-
-		totalBytesRcvd=0;
+		ricevi(clientSocket, buf1);
 
 		  strupr(buf);
 		  //INVIO 1
@@ -100,18 +117,21 @@ int main() {
 
 void invio(int clientSocket,char inputString[BUFFERSIZE],int stringLen){
 	if (send(clientSocket, inputString, stringLen, 0) != stringLen) {
-				ErrorHandler("send() sent a different number of bytes than expected");
+				ErrorHandler("send() sent a different number of bytes than expected \n");
 				closesocket(clientSocket);
 				ClearWinSock();
 	}
 }
 
-void ricevi(int totalBytesRcvd,int bytesRcvd,int clientSocket,char buf[BUFFERSIZE]){
+void ricevi(int clientSocket,char buf[BUFFERSIZE]){
+	int bytesRcvd;
+	int totalBytesRcvd = 0;
+
 	printf("Received: ");
 		while (totalBytesRcvd == 0){
 			fflush(stdout);
 			if ((bytesRcvd = recv(clientSocket, buf, BUFFERSIZE - 1, 0)) <= 0) {
-				ErrorHandler("recv() failed or connection closed prematurely");
+				ErrorHandler("recv() failed or connection closed prematurely \n");
 				closesocket(clientSocket);
 				ClearWinSock();
 			}
