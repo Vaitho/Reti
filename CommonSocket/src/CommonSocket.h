@@ -28,4 +28,5 @@ void listenSocket(int MYSocket, int len);
 int acceptSocket(int MySocket);
 void invio(int clientSocket,char inputString[BUFFERSIZE],int stringLen);
 void ricevi(int clientSocket,char buf[BUFFERSIZE]);
+int connectClient(int socket, char* ip, int port);
 #endif

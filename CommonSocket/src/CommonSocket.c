@@ -45,7 +45,7 @@ int createSocket(int MySocket){
 		return MySocket;
 	}
 }
-
+/////////////////////////////////////////////////////////////////
 void bindSocket(int MySocket, char* ip, int port){
 	struct sockaddr_in sad;
 	memset(&sad, 0, sizeof(sad)); // ensures that extra bytes contain 0
@@ -60,7 +60,7 @@ void bindSocket(int MySocket, char* ip, int port){
 		printf("bind() it's okay!\n");
 	}
 }
-
+/////////////////////////////////////////////////////////////////
 void listenSocket(int MySocket, int len){
 	if(listen(MySocket, len)){
 		ErrorHandler("listen() failed.\n");
@@ -70,7 +70,7 @@ void listenSocket(int MySocket, int len){
 		printf("listen() okay! \n");
 	}
 }
-
+/////////////////////////////////////////////////////////////////
 int acceptSocket(int MySocket){
 	struct sockaddr_in cad; // structure for the client address
 	int clientLen; // the size of the client address
@@ -113,4 +113,18 @@ void ricevi(int clientSocket,char buf[BUFFERSIZE]){
 			printf("%s", buf);
 			printf("\n");
 		}
+}
+/////////////////////////////////////////////////////////////////
+
+int connectClient(int socket, char* ip, int port){
+	struct sockaddr_in sad;
+	memset(&sad, 0, sizeof(sad));
+	sad.sin_family = AF_INET;
+	sad.sin_addr.s_addr = inet_addr(ip);
+	sad.sin_port = htons(port);
+	if(connect(socket, (struct sockaddr *)&sad, sizeof(sad))){
+		return -1;
+	}else{
+		return 0;
+	}
 }
