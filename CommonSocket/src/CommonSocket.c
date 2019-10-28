@@ -34,8 +34,8 @@ void startWSAS() {
 }
 /////////////////////////////////////////////////////////////////
 
-int createSocket(int MySocket){
-	MySocket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+int createSocket(){
+	int MySocket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (MySocket < 0) {
 		ErrorHandler("socket creation failed.\n");
 		ClearWinSock();
