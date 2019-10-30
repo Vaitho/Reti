@@ -38,7 +38,6 @@ int createSocket(){
 	int MySocket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (MySocket < 0) {
 		ErrorHandler("socket creation failed.\n");
-		ClearWinSock();
 		return -1;
 	}else{
 		printf("Socket creation accept! \n");
@@ -46,7 +45,7 @@ int createSocket(){
 	}
 }
 /////////////////////////////////////////////////////////////////
-void bindSocket(int MySocket, char* ip, int port){
+int bindSocket(int MySocket, char* ip, int port){
 	struct sockaddr_in sad;
 	memset(&sad, 0, sizeof(sad)); // ensures that extra bytes contain 0
 	sad.sin_family = AF_INET;
@@ -54,20 +53,20 @@ void bindSocket(int MySocket, char* ip, int port){
 	sad.sin_port = htons(port);
 	if(bind(MySocket, (struct sockaddr*) &sad, sizeof(sad))<0){
 		ErrorHandler("bind() failed.\n");
-		closesocket(MySocket);
-		ClearWinSock();
+		return -1;
 	}else{
 		printf("bind() it's okay!\n");
+		return 0;
 	}
 }
 /////////////////////////////////////////////////////////////////
-void listenSocket(int MySocket, int len){
+int listenSocket(int MySocket, int len){
 	if(listen(MySocket, len)){
 		ErrorHandler("listen() failed.\n");
-		closesocket(MySocket);
-		ClearWinSock();
+		return -1;
 	}else{
 		printf("listen() okay! \n");
+		return 0;
 	}
 }
 /////////////////////////////////////////////////////////////////
@@ -78,10 +77,7 @@ int acceptSocket(int MySocket){
 	clientLen = sizeof(cad); // set the size of the client address
 	if((clientSocket = accept(MySocket,(struct sockaddr *)&cad, &clientLen)) < 0){
 		ErrorHandler("accept() failed.\n");
-		// CHIUSURA DELLA CONNESSIONE
-		closesocket(MySocket);
-		ClearWinSock();
-		return 0;
+		return -1;
 	}else{
 		printf("Handling client %s\n", inet_ntoa(cad.sin_addr));
 		return clientSocket;
@@ -100,8 +96,6 @@ void invio(int clientSocket,char inputString[BUFFERSIZE],int stringLen){
 void ricevi(int clientSocket,char buf[BUFFERSIZE]){
 	int bytesRcvd;
 	int totalBytesRcvd = 0;
-
-	printf("Received: ");
 		while (totalBytesRcvd == 0){
 			if ((bytesRcvd = recv(clientSocket, buf, BUFFERSIZE - 1, 0)) <= 0) {
 				ErrorHandler("recv() failed or connection closed prematurely \n");
@@ -110,8 +104,6 @@ void ricevi(int clientSocket,char buf[BUFFERSIZE]){
 			}
 			totalBytesRcvd += bytesRcvd;
 			buf[bytesRcvd] = '\0';
-			printf("%s", buf);
-			printf("\n");
 		}
 }
 /////////////////////////////////////////////////////////////////
@@ -123,8 +115,11 @@ int connectClient(int socket, char* ip, int port){
 	sad.sin_addr.s_addr = inet_addr(ip);
 	sad.sin_port = htons(port);
 	if(connect(socket, (struct sockaddr *)&sad, sizeof(sad))){
+		ErrorHandler( "Failed to connect.\n" );
 		return -1;
 	}else{
 		return 0;
 	}
 }
+
+////////////////////////////////////////////////////////////////

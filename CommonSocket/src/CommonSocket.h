@@ -23,10 +23,13 @@ void startWSAS();
 void ClearWinSock();
 void ErrorHandler(char *errorMessage);
 int createSocket();
-void bindSocket(int MySocket, char* ip, int port);
-void listenSocket(int MYSocket, int len);
+int bindSocket(int MySocket, char* ip, int port);
+int listenSocket(int MySocket, int len);
 int acceptSocket(int MySocket);
 void invio(int clientSocket,char inputString[BUFFERSIZE],int stringLen);
 void ricevi(int clientSocket,char buf[BUFFERSIZE]);
 int connectClient(int socket, char* ip, int port);
+
+int receivingInt(int* socket, int* i);
+int sendingInt(int* socket, int i);
 #endif
