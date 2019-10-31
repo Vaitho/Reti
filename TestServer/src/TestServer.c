@@ -22,7 +22,6 @@ int main(){
 	int port,s,a,b;
 	if(checkPort(PROTOPORT)){
 		port = PROTOPORT;
-		printf("Port okay!\n");
 	}else{
 		printf("Invalid port\n");
 	}

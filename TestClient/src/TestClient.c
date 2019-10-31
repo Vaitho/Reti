@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "CommonSocket.h"
 
 #define BUFFERSIZE 512
@@ -18,7 +19,6 @@ int main(void) {
 	int port;
 	if(checkPort(PROTOPORT)){
 		port = PROTOPORT;
-		printf("Port okay!\n");
 	}else{
 		printf("Invalid port\n");
 	}
@@ -38,7 +38,8 @@ int main(void) {
 	//RICEVI
 	char buf[BUFFERSIZE]; // buffer for data from the server
 	ricevi(Csocket,buf);
-	printf("Seleziona l'operazione da fare(inserendo a/s/m/d):" );
+	printf(buf);
+	printf("\n Seleziona l'operazione da fare(inserendo a/s/m/d):" );
 	scanf("%s",buf);
 	int stringLen = strlen(buf);
 	invio(Csocket,buf,stringLen);
@@ -58,13 +59,12 @@ int main(void) {
 	invio(Csocket,b,stringLen);
 	memset(buf, 0, BUFFERSIZE*sizeof(buf[0]));
 	ricevi(Csocket,buf);
-	if(buf[0]="T"){
-		printf("chiusura connessione");
-		printf("\n");
-	}else{
+	if(strcmp(buf,"TERMINE PROCESSO CLIENT")){
 		printf("Il risultato dell'operazione e':");
 		printf("%s", buf);
 		printf("\n");
+	}else{
+		printf("chiusura connessione \n");
 	}
 	// CHIUSURA DELLA CONNESSIONE
 	closesocket(Csocket);
